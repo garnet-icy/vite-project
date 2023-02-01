@@ -13,6 +13,8 @@
     "axios": "^1.2.6",
     "element-plus": "^1.0.2-beta.28",
     "element-ui": "^2.15.12",
+    "fs-extra": "^11.1.0",
+    "fse": "^4.0.1",
     "multiparty": "^4.2.3",
     "vue": "^3.2.45",
     "vue-router": "^4.0.13"

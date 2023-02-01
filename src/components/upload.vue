@@ -2,6 +2,8 @@
   <div>
     <input type="file" @change="fileChange" />
     <el-button @click="upload" type="primary">上传</el-button>
+    <el-button @click="mergeFile" type="success">合并</el-button>
+    <!-- <el-progress v-for="item in fileProgress"></el-progress> -->
   </div>
 </template>
 
@@ -13,23 +15,23 @@ import axios from "axios";
 let originFile = ref("");
 let chunkList = reactive([]);
 let paramsList = reactive([]);
+axios.defaults.baseURL = "http://localhost:3000";
 // 拿到文件
 const fileChange = (e) => {
   originFile.value = e.target.files[0];
-  console.log("e.target: ", e.target.files[0]);
   chunkList.value = getChunkList(originFile.value);
   paramsList.value = chunkList.value.map((item, index) => {
-    return {
-      index,
-      file: item.chunk,
-      size: item.chunk.size,
-      fileName: originFile.value.name,
-    };
+    let data = new FormData();
+    data.append("index", index);
+    data.append("file", item.chunk);
+    data.append("size", item.chunk.size);
+    data.append("fileName", originFile.value.name);
+    return data;
   });
   console.log("paramsList", paramsList);
 };
 // 分片，参数为文件和每片文件的大小
-const getChunkList = (file, size = 50 * 1024) => {
+const getChunkList = (file, size = 100 * 1024 * 1024) => {
   let cur = 0;
   let chunkList = [];
   while (cur < file.size) {
@@ -39,27 +41,40 @@ const getChunkList = (file, size = 50 * 1024) => {
   return chunkList;
 };
 // 进度
-const onUploadProgress = (e) => {
-  console.error("onUploadProgress", e);
+const onUploadProgressCb = (e) => {
+  console.error("onUploadProgressCb", e);
 };
 // 上传
-const upload = () => {
+const upload = async () => {
   if (!chunkList.value) {
     ElMessage.error("请先选择文件");
     return;
   }
   axios.defaults.baseURL = "http://localhost:3000";
-  axios
-    .post(
-      "/upload",
-      paramsList.value[0],
-      { "content-type": "application/json" },
-      onUploadProgress
-    )
+  await Promise.all(
+    paramsList.value.map((i) => {
+      return axios.post("/upload", i, {
+        onDownloadProgress: function (progressEvent) {
+          // 处理原生进度事件
+          let persent =
+            ((progressEvent.loaded / progressEvent.total) * 100) | 0; //上传进度百分比
+          console.log(persent);
+        },
+      });
+    })
+  )
     .then((response) => {
-      console.error("response: ", response);
+      console.log("response: ", response);
+      ElMessage.success("上传成功");
+    })
+    .catch((e) => {
+      console.log(e);
     });
-  // paramsList.value.forEach((item) => {});
+};
+const mergeFile = () => {
+  axios.post("/merge").then((res) => {
+    console.log(res);
+  });
 };
 </script>
 
