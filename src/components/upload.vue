@@ -31,7 +31,7 @@ const fileChange = (e) => {
   console.log("paramsList", paramsList);
 };
 // 分片，参数为文件和每片文件的大小
-const getChunkList = (file, size = 100 * 1024 * 1024) => {
+const getChunkList = (file, size = 10000 * 1024) => {
   let cur = 0;
   let chunkList = [];
   while (cur < file.size) {
